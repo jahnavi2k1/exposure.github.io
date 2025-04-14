@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context-Aware Auto Exposure System for Scene-Specific Optimization</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .gradient-bg {
+            background: linear-gradient(120deg, #3b82f6, #2563eb);
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .result-card {
+            transition: all 0.3s ease;
+        }
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .slider-track {
+            height: 2px;
+            background-color: #e2e8f0;
+        }
+        .slider-thumb {
+            width: 16px;
+            height: 16px;
+            background-color: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .custom-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: #ddd;
+            outline: none;
+        }
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        .custom-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+        }
+        .hdr-label {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        .non-hdr-label {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+        .drop-zone:hover, .drop-zone.active {
+            border-color: #3b82f6;
+            background-color: #f0f9ff;
+        }
+        canvas {
+            image-rendering: pixelated;
+        }
+        .formula-card {
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border-left: 4px solid #3b82f6;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+        }
+        tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .exposure-pill {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+        .heatmap-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .print-friendly {
+            break-inside: avoid;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-10">
+    <header class="gradient-bg text-white py-8 px-4 mb-8">
+        <div class="container mx-auto">
+            <h1 class="text-3xl font-bold mb-2">Context-Aware Auto Exposure System</h1>
+            <p class="text-xl opacity-90"> for Scene-Specific Optimization in Imaging Devices</p>
+            <div class="mt-4 text-sm opacity-80">
+                <p>Balivada Jahnavi (2023002990)</p>
+                <p>Under the guidance of Dr. B. Ravi Kiran, Associate Professor, GITAM</p>
+                <p>Department of Computer Science and Engineering, GITAM School of Technology</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4">
+        <!-- Abstract Section -->
+        <div class="card p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-4">Abstract</h2>
+            <p class="mb-4" style="text-align: justify;">HDR imaging represents a visual quality 
+                enhancement system that retrieves information from bright and dark image
+                 regions to surpass traditional imaging approaches. This paper
+                 introduces an automatic system that identifies HDR content using
+                 dynamic range perception and neighborhood contrast examination
+                 techniques. The system begins by acquiring an image through
+                 a webcam before processing it into grayscale, through which
+                 percentile-based luminance estimation and Sobel gradient operators
+                 evaluate the scene dynamic range. The classification mechanism
+                 decides between HDR imaging needs and selects the most suitable
+                 number of exposure captures. The designed algorithm functions
+                 in real-time for imaging systems, providing users with an effective
+                 tool to detect HDR scenes and determine optimal exposure levels.
+                 Experimental results show how this method achieves reliable HDR
+                 and non-HDR scene detection and display the number of exposures
+                 needed for the scene if the image is HDR for different lighting
+                 conditions.</p>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Input Section -->
+            <div class="lg:w-1/2">
+                <div class="card p-6 mb-6">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-camera mr-2"></i> Image Input
+                    </h2>
+                    
+                    <!-- Camera Controls -->
+                    <div class="mb-6">
+                        <div class="flex items-center mb-3">
+                            <label for="cameraSelect" class="mr-2 font-medium">Camera:</label>
+                            <select id="cameraSelect" class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="user">Front Camera</option>
+                                <option value="environment">Back Camera</option>
+                            </select>
+                        </div>
+                        
+                        <div class="relative w-full aspect-video bg-gray-100 rounded overflow-hidden mb-3">
+                            <video id="cameraFeed" class="w-full h-full object-cover hidden" autoplay playsinline></video>
+                            <img id="capturedImage" class="w-full h-full object-contain hidden" alt="Captured image">
+                            <div id="placeholderImage" class="w-full h-full flex items-center justify-center">
+                                <i class="fas fa-image text-4xl text-gray-400"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-2">
+                            <button id="startCameraBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition-colors">
+                                <i class="fas fa-video mr-1"></i> Start Camera
+                            </button>
+                            <button id="captureBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors" disabled>
+                                <i class="fas fa-camera mr-1"></i> Capture
+                            </button>
+                            <button id="stopCameraBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition-colors" disabled>
+                                <i class="fas fa-stop mr-1"></i> Stop
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- File Upload Area -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium mb-2">Or Upload an Image</h3>
+                        <div id="dropZone" class="drop-zone rounded-lg p-8 text-center cursor-pointer mb-3">
+                            <input type="file" id="fileInput" class="hidden" accept="image/*">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-gray-500">Drag & drop an image here<br>or click to browse files</p>
+                        </div>
+                    </div>
+                    
+                    <button id="analyzeBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-search mr-1"></i> Analyze Image
+                    </button>
+                </div>
+                
+                <!-- Sensitivity Controls -->
+                <div class="card p-6">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-sliders-h mr-2"></i> Detection Sensitivity
+                    </h2>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <label for="drThreshold" class="font-medium">Dynamic Range Threshold (stops):</label>
+                            <span id="drThresholdValue" class="font-medium text-blue-600">4.0</span>
+                        </div>
+                        <input type="range" id="drThreshold" class="custom-slider w-full" min="1" max="10" step="0.1" value="4.0">
+                        <p class="text-sm text-gray-500 mt-1">Determines how much dynamic range (stops) is needed to classify as HDR</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <label for="contrastThreshold" class="font-medium">Local Contrast Threshold:</label>
+                            <span id="contrastThresholdValue" class="font-medium text-blue-600">8.0</span>
+                        </div>
+                        <input type="range" id="contrastThreshold" class="custom-slider w-full" min="1" max="20" step="0.5" value="8.0">
+                        <p class="text-sm text-gray-500 mt-1">Sets the minimum local contrast requirement for HDR classification</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <label for="lowPercentile" class="font-medium">Shadow Percentile:</label>
+                            <span id="lowPercentileValue" class="font-medium text-blue-600">2</span>
+                        </div>
+                        <input type="range" id="lowPercentile" class="custom-slider w-full" min="1" max="20" step="1" value="2">
+                        <p class="text-sm text-gray-500 mt-1">Percentile used for measuring shadow regions (lower values are more sensitive)</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <label for="highPercentile" class="font-medium">Highlight Percentile:</label>
+                            <span id="highPercentileValue" class="font-medium text-blue-600">98</span>
+                        </div>
+                        <input type="range" id="highPercentile" class="custom-slider w-full" min="80" max="99" step="1" value="98">
+                        <p class="text-sm text-gray-500 mt-1">Percentile used for measuring highlight regions (higher values are more sensitive)</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <label for="hdrSensitivity" class="font-medium">Overall HDR Sensitivity:</label>
+                            <span id="hdrSensitivityValue" class="font-medium text-blue-600">Normal</span>
+                        </div>
+                        <input type="range" id="hdrSensitivity" class="custom-slider w-full" min="1" max="5" step="1" value="3">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Conservative</span>
+                            <span>Normal</span>
+                            <span>Aggressive</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="lg:w-1/2">
+                <div class="card p-6 mb-6">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-chart-bar mr-2"></i> Analysis Results
+                    </h2>
+                    
+                    <div id="resultsSection" class="mb-6 opacity-50">
+                        <!-- Main Classification Result -->
+                        <div class="result-card p-4 bg-gray-50 rounded-lg mb-4 shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-medium mb-1">HDR Classification</h3>
+                            <div id="classificationValue" class="text-3xl font-bold mb-2">-</div>
+                            <p id="classificationResult" class="text-gray-600">Upload or capture an image to analyze</p>
+                        </div>
+                        
+                        <!-- Detailed Analysis Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="result-card p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-100">
+                                <h3 class="text-lg font-medium mb-1">Dynamic Range</h3>
+                                <div id="dynamicRangeValue" class="text-2xl font-bold">-</div>
+                                <p class="text-sm text-gray-600">Perceptual range in stops</p>
+                            </div>
+                            
+                            <div class="result-card p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-100">
+                                <h3 class="text-lg font-medium mb-1">Local Contrast</h3>
+                                <div id="contrastValue" class="text-2xl font-bold">-</div>
+                                <p class="text-sm text-gray-600">Average edge intensity</p>
+                            </div>
+                            
+                            <div class="result-card p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-100">
+                                <h3 class="text-lg font-medium mb-1">High Contrast Areas</h3>
+                                <div id="highContrastValue" class="text-2xl font-bold">-</div>
+                                <p class="text-sm text-gray-600">% of image with high contrast</p>
+                            </div>
+                            
+                            <div class="result-card p-4 bg-gray-50 rounded-lg shadow-sm border border-gray-100">
+                                <h3 class="text-lg font-medium mb-1">Suggested Exposures</h3>
+                                <div id="exposuresValue" class="text-2xl font-bold text-blue-600">-</div>
+                                <p class="text-sm text-gray-600">Recommended brackets</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Exposure Brackets Section -->
+                    <div id="exposureBrackets" class="mb-6 hidden">
+                        <h3 class="text-lg font-medium mb-2">Recommended Exposure Brackets</h3>
+                        <div id="exposurePills" class="flex flex-wrap"></div>
+                    </div>
+                    
+                    <!-- Visualizations -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-3">Visualizations</h3>
+                        
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-medium">Luminance Histogram</h4>
+                                <div class="flex items-center text-sm text-gray-500">
+                                    <span class="h-3 w-3 block bg-red-500 rounded-full mr-1"></span>
+                                    <span class="mr-3">Shadows</span>
+                                    <span class="h-3 w-3 block bg-green-500 rounded-full mr-1"></span>
+                                    <span>Highlights</span>
+                                </div>
+                            </div>
+                            <div class="relative bg-gray-100 rounded h-40">
+                                <canvas id="histogram" class="w-full h-full rounded"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h4 class="font-medium mb-2">Dynamic Range Map</h4>
+                            <div class="relative bg-gray-100 rounded overflow-hidden" style="height: 200px;">
+                                <div id="imageMapContainer" class="w-full h-full">
+                                    <img id="analysisImage" class="w-full h-full object-contain" alt="">
+                                    <canvas id="heatmapCanvas" class="heatmap-canvas w-full h-full"></canvas>
+                                </div>
+                            </div>
+                            <div class="flex justify-between mt-2 text-xs text-gray-600">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-blue-900 rounded-sm mr-1"></div>
+                                    <span>Shadows</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-green-400 rounded-sm mr-1"></div>
+                                    <span>Mid-tones</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-red-500 rounded-sm mr-1"></div>
+                                    <span>Highlights</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-medium mb-2">Local Contrast Map</h4>
+                            <div class="relative bg-gray-100 rounded overflow-hidden" style="height: 200px;">
+                                <div id="contrastMapContainer" class="w-full h-full">
+                                    <img id="contrastImage" class="w-full h-full object-contain" alt="">
+                                    <canvas id="contrastCanvas" class="heatmap-canvas w-full h-full"></canvas>
+                                </div>
+                            </div>
+                            <div class="flex justify-between mt-2 text-xs text-gray-600">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-blue-100 rounded-sm mr-1"></div>
+                                    <span>Low Contrast</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-yellow-400 rounded-sm mr-1"></div>
+                                    <span>Medium Contrast</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-red-600 rounded-sm mr-1"></div>
+                                    <span>High Contrast</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Technical Section -->
+        <div class="card p-6 mt-6 print-friendly">
+            <h2 class="text-2xl font-bold mb-4">System Architecture & Methodology</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-3">System Workflow</h3>
+                    <ol class="list-decimal pl-5 space-y-2">
+                        <li>
+                            <span class="font-medium">Input Image Acquisition:</span> 
+                            <p class="text-sm text-gray-700">The system begins with either user-provided image files or webcam input sources for image reception.</p>
+                        </li>
+                        <li>
+                            <span class="font-medium">Grayscale Conversion:</span> 
+                            <p class="text-sm text-gray-700">The system transforms the input image into grayscale format because this simplifies the analysis and reduces computational expense.</p>
+                        </li>
+                        <li>
+                            <span class="font-medium">Feature Analysis:</span>
+                            <p class="text-sm text-gray-700">Includes dynamic range analysis, brightness distribution, and local contrast analysis using edge-detection operators like Sobel and Laplacian.</p>
+                        </li>
+                        <li>
+                            <span class="font-medium">HDR Classification:</span>
+                            <p class="text-sm text-gray-700">The system reaches a decision about HDR processing requirements by analyzing the results from three assessments.</p>
+                        </li>
+                        <li>
+                            <span class="font-medium">Final Exposure Recommendation:</span>
+                            <p class="text-sm text-gray-700">The system determines necessary HDR processing criteria by computing exposure requirements that yield improved image quality.</p>
+                        </li>
+                    </ol>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-3">Dynamic Range Analysis</h3>
+                    <p class="mb-3">Perceptual Dynamic Range is calculated using percentile-based analysis to avoid outliers:</p>
+                    <div class="formula-card mb-4">
+                        <p class="text-center italic">Dynamic Range = log₂(P₉₅ / (P₅ + ε))</p>
+                    </div>
+                    <p class="text-sm mb-3">Where:</p>
+                    <ul class="list-disc pl-5 text-sm space-y-1 mb-4">
+                        <li><span class="font-medium">P₅</span> - 5th percentile brightness value (shadows)</li>
+                        <li><span class="font-medium">P₉₅</span> - 95th percentile brightness value (highlights)</li>
+                        <li><span class="font-medium">ε</span> - Small constant (10⁻⁶) to prevent division by zero</li>
+                    </ul>
+                    
+                    <h3 class="text-lg font-bold mb-3">Local Contrast Analysis</h3>
+                    <p class="mb-3">Local contrast is measured using Sobel operators to detect edges and compute gradient magnitude:</p>
+                    <div class="formula-card">
+                        <p class="text-center italic">Local Contrast = mean(|∇I|)</p>
+                    </div>
+                    <p class="text-sm mt-2">Where |∇I| is the gradient magnitude computed using Sobel operators for horizontal and vertical directions.</p>
+                </div>
+            </div>
+            
+            <div class="mb-8">
+                <h3 class="text-lg font-bold mb-3">Brightness Balance Analysis</h3>
+                <p class="mb-3">The brightness balance metric divides pixel intensity into three zones and measures the distribution:</p>
+                <div class="formula-card mb-4">
+                    <p class="text-center italic">B<sub>balance</sub> = (N<sub>dark</sub> + N<sub>bright</sub>) / N<sub>total</sub></p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-3 bg-blue-50 rounded-lg">
+                        <p class="font-medium text-blue-800">Dark Zone (0-84)</p>
+                        <p class="text-sm">Represents shadow areas with potential detail loss due to underexposure</p>
+                    </div>
+                    <div class="p-3 bg-green-50 rounded-lg">
+                        <p class="font-medium text-green-800">Mid-tone Zone (85-169)</p>
+                        <p class="text-sm">Represents well-exposed areas with good detail visibility</p>
+                    </div>
+                    <div class="p-3 bg-red-50 rounded-lg">
+                        <p class="font-medium text-red-800">Bright Zone (170-255)</p>
+                        <p class="text-sm">Represents highlight areas with potential detail loss due to overexposure</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-8">
+                <h3 class="text-lg font-bold mb-3">HDR Detection Criteria</h3>
+                <p class="mb-4">The system uses multiple criteria to determine if a scene requires HDR processing:</p>
+                
+                <div class="overflow-x-auto mb-6">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Classification</th>
+                                <th>Dynamic Range</th>
+                                <th>Local Contrast</th>
+                                <th>High Contrast Regions</th>
+                                <th>Recommended Exposures</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Standard (non-HDR)</td>
+                                <td>&lt; 4 stops</td>
+                                <td>Any</td>
+                                <td>&lt; 10%</td>
+                                <td>1 (EV 0)</td>
+                            </tr>
+                            <tr>
+                                <td>Moderate HDR</td>
+                                <td>4-7 stops</td>
+                                <td>&gt; 8.0</td>
+                                <td>&gt; 10%</td>
+                                <td>3 (EV -2, 0, +2)</td>
+                            </tr>
+                            <tr>
+                                <td>Strong HDR</td>
+                                <td>7-10 stops</td>
+                                <td>&gt; 5.0</td>
+                                <td>&gt; 15%</td>
+                                <td>5 (EV -4, -2, 0, +2, +4)</td>
+                            </tr>
+                            <tr>
+                                <td>Extreme HDR</td>
+                                <td>&gt; 10 stops</td>
+                                <td>Any</td>
+                                <td>&gt; 10%</td>
+                                <td>7+ (EV -6, -4, -2, 0, +2, +4, +6)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-bold mb-3">Exposure Triangle in Photography</h3>
+                <p class="mb-4">The three essential exposure components called the exposure triangle consist of:</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h4 class="font-bold text-lg mb-2 text-blue-600">Aperture</h4>
+                        <p class="text-sm mb-2">The lens opening that controls how much light enters the camera, measured in f-stops like f/1.8 or f/16.</p>
+                        <ul class="text-sm list-disc pl-5 space-y-1">
+                            <li>Smaller f-numbers (f/1.8) = more light, shallow depth of field</li>
+                            <li>Larger f-numbers (f/16) = less light, greater depth of field</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h4 class="font-bold text-lg mb-2 text-blue-600">Shutter Speed</h4>
+                        <p class="text-sm mb-2">The time duration the shutter remains open to expose the sensor, measured in seconds or fractions (1/500, 1/60, 1").</p>
+                        <ul class="text-sm list-disc pl-5 space-y-1">
+                            <li>Fast speeds (1/1000) = less light, freeze motion</li>
+                            <li>Slow speeds (1/30 or 1") = more light, motion blur</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h4 class="font-bold text-lg mb-2 text-blue-600">ISO</h4>
+                        <p class="text-sm mb-2">The sensor's sensitivity to light, measured in values like 100, 200, 400, 1600.</p>
+                        <ul class="text-sm list-disc pl-5 space-y-1">
+                            <li>Low ISO (100) = less sensitive, less noise, darker images</li>
+                            <li>High ISO (1600+) = more sensitive, more noise, brighter images</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Academic Content from the PDF -->
+        <div class="card p-6 mt-6 print-friendly">
+            <h2 class="text-2xl font-bold mb-4">Advanced Analysis Techniques</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-3">Sobel Operator for Edge Detection</h3>
+                    <p class="mb-3">The Sobel operator uses two 3×3 kernels to detect horizontal and vertical edges:</p>
+                    
+                    <div class="mb-4 p-4 bg-gray-50 rounded">
+                        <p class="mb-2 font-medium">Horizontal Gradient kernel (Sx):</p>
+                        <div class="font-mono text-center mb-3">
+                            [-1 0 1]<br>
+                            [-2 0 2]<br>
+                            [-1 0 1]
+                        </div>
+                        
+                        <p class="mb-2 font-medium">Vertical Gradient Kernel(Sy):</p>
+                        <div class="font-mono text-center">
+                            [-1 -2 -1]<br>
+                            [ 0  0  0]<br>
+                            [ 1  2  1]
+                        </div>
+                    </div>
+                    
+                    <p class="mb-3">The combined gradient magnitude is calculated as:</p>
+                    <div class="formula-card mb-4">
+                        <p class="text-center italic">|G| = √(G<sub>x</sub>² + G<sub>y</sub>²)</p>
+                    </div>
+                    
+                    <p class="text-sm">This measure reveals important edges and distinctive texture patterns throughout an image for analysis purposes.</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-3">Laplacian Operator</h3>
+                    <p class="mb-3">The Laplacian operator is a second-order differential operator that evaluates both intensity changes and the transformation of rate of change dimensions:</p>
+                    
+                    <div class="formula-card mb-3">
+                        <p class="text-center italic">∇²f = ∂²f/∂x² + ∂²f/∂y²</p>
+                    </div>
+                    
+                    <p class="mb-3">Discrete approximation using a 3×3 kernel:</p>
+                    
+                    <div class="mb-4 p-4 bg-gray-50 rounded">
+                        <div class="font-mono text-center">
+                            [ 0  1  0]<br>
+                            [ 1 -4  1]<br>
+                            [ 0  1  0]
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm mb-3">The Laplacian operator highlights:</p>
+                    <ul class="list-disc pl-5 text-sm space-y-1">
+                        <li>Edge Detection: Brings out object boundaries</li>
+                        <li>Texture Enhancement: Highlights small-scale texture features</li>
+                        <li>Zero crossings: Detects locations where the intensity function changes curvature</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="mt-8">
+                <h3 class="text-lg font-bold mb-3">Gaussian Blur for Noise Reduction</h3>
+                <p class="mb-3">A Gaussian blur is applied before edge detection to reduce noise and smooth the image, ensuring that edge detection operators focus on meaningful edges rather than random noise.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <p class="mb-2">A typical 5×5 Gaussian kernel (with σ=1.4):</p>
+                        <div class="p-4 bg-gray-50 rounded font-mono text-center text-sm">
+                            [0.01 0.02 0.03 0.02 0.01]<br>
+                            [0.02 0.06 0.09 0.06 0.02]<br>
+                            [0.03 0.09 0.13 0.09 0.03]<br>
+                            [0.02 0.06 0.09 0.06 0.02]<br>
+                            [0.01 0.02 0.03 0.02 0.01]
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <p class="mb-3">Benefits of Gaussian blur pre-processing:</p>
+                        <ul class="list-disc pl-5 space-y-1 text-sm">
+                            <li>Reduces high-frequency noise while preserving important image structures</li>
+                            <li>Improves the reliability of edge detection algorithms</li>
+                            <li>Smooths out minor variations that might be misinterpreted as edges</li>
+                            <li>Helps focus analysis on meaningful image features</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Performance -->
+        <div class="card p-6 mt-6 print-friendly">
+            <h2 class="text-2xl font-bold mb-4">System Performance & Results</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-bold mb-3">Scene Analysis Performance</h3>
+                <p class="mb-3">The system was tested across diverse challenging visual scenarios to evaluate its effectiveness as an HDR identifier and exposure recommendation system.</p>
+                
+                <div class="overflow-x-auto mb-4">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Scene Type</th>
+                                <th>Perceptual DR (avg)</th>
+                                <th>Local Contrast (avg)</th>
+                                <th>HDR Detection Accuracy</th>
+                                <th>Exposure Recommendation Accuracy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Low-light conditions</td>
+                                <td>5.3 stops</td>
+                                <td>4.2</td>
+                                <td>86%</td>
+                                <td>81%</td>
+                            </tr>
+                            <tr>
+                                <td>High contrast outdoor</td>
+                                <td>9.7 stops</td>
+                                <td>12.8</td>
+                                <td>94%</td>
+                                <td>90%</td>
+                            </tr>
+                            <tr>
+                                <td>Indoor mixed lighting</td>
+                                <td>6.8 stops</td>
+                                <td>7.5</td>
+                                <td>89%</td>
+                                <td>85%</td>
+                            </tr>
+                            <tr>
+                                <td>Uniform lighting</td>
+                                <td>3.2 stops</td>
+                                <td>5.3</td>
+                                <td>92%</td>
+                                <td>94%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <p>The Context-Aware Auto Exposure System achieves an overall accuracy of 87.5% in HDR scene detection across various lighting conditions, demonstrating consistent performance in real-time applications.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold mb-3">Percentile-Based Analysis Results</h3>
+                    <p class="mb-3">Different percentile combinations were tested to determine the optimal values for dynamic range calculation:</p>
+                    
+                    <div class="overflow-x-auto">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Percentile Combination</th>
+                                    <th>Noise Resilience</th>
+                                    <th>DR Accuracy</th>
+                                    <th>Processing Stability</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1st and 99th</td>
+                                    <td>Low</td>
+                                    <td>Moderate</td>
+                                    <td>Unstable</td>
+                                </tr>
+                                <tr>
+                                    <td>5th and 95th</td>
+                                    <td>High</td>
+                                    <td>High</td>
+                                    <td>Stable</td>
+                                </tr>
+                                <tr>
+                                    <td>10th and 90th</td>
+                                    <td>Very High</td>
+                                    <td>Moderate</td>
+                                    <td>Very Stable</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <p class="mt-3 text-sm">The 5th and 95th percentile combination proved most effective, balancing noise resistance with accurate dynamic range assessment.</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-bold mb-3">Exposure Recommendation Analysis</h3>
+                    <p class="mb-3">The system determines optimal exposure brackets based on scene characteristics:</p>
+                    
+                    <div class="overflow-x-auto">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>DR Classification</th>
+                                    <th>Dynamic Range</th>
+                                    <th>Recommended Exposures</th>
+                                    <th>EV Spacing</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Standard</td>
+                                    <td>&lt; 4 stops</td>
+                                    <td>1</td>
+                                    <td>0</td>
+                                </tr>
+                                <tr>
+                                    <td>Moderate HDR</td>
+                                    <td>4-7 stops</td>
+                                    <td>3</td>
+                                    <td>±2 EV</td>
+                                </tr>
+                                <tr>
+                                    <td>Strong HDR</td>
+                                    <td>7-10 stops</td>
+                                    <td>5</td>
+                                    <td>±2 EV</td>
+                                </tr>
+                                <tr>
+                                    <td>Extreme HDR</td>
+                                    <td>&gt; 10 stops</td>
+                                    <td>7+</td>
+                                    <td>±2 EV</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conclusion and Future Work -->
+        <div class="card p-6 mt-6 print-friendly">
+            <h2 class="text-2xl font-bold mb-4">Conclusion & Future Scope</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-bold mb-3">Conclusion</h3>
+                <p class="mb-3">The Context-Aware Auto Exposure System effectively differentiates scenes appropriate for HDR processing, achieving an accuracy rate of 87.5% through analysis of dynamic range and local contrast data.</p>
+                
+                <p class="mb-3">Key strengths of the system include:</p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>Effective operation across various lighting environments</li>
+                    <li>No dependence on training data, making it more versatile than pure machine learning approaches</li>
+                    <li>Evenly distributed evaluation results across different scene types</li>
+                    <li>Real-time performance without requiring specialized hardware</li>
+                </ul>
+                
+                <p class="mt-3">The multi-factor analysis approach combining dynamic range, brightness distribution, and local contrast provides superior performance (92.3% accuracy) compared to single-factor methods (78.5%).</p>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-bold mb-3">Future Scope</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-medium mb-2">Technical Improvements</h4>
+                        <ul class="list-disc pl-5 space-y-1 text-sm">
+                            <li>Enhanced motion blur detection and prevention</li>
+                            <li>Camera sensor-specific threshold adaptation</li>
+                            <li>Combined analysis of color and luminance contrast</li>
+                            <li>Noise-aware filtering for improved low-light performance</li>
+                            <li>Systematic exposure bracketing for extreme dynamic range scenes</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium mb-2">System Enhancements</h4>
+                        <ul class="list-disc pl-5 space-y-1 text-sm">
+                            <li>Hybrid solution merging algorithmic approach with machine learning</li>
+                            <li>Hardware-specific implementation for improved performance</li>
+                            <li>Camera API integration for direct exposure parameter control</li>
+                            <li>Video analysis extension with temporal consistency</li>
+                            <li>User interface improvements for manual threshold adjustments</li>
+                            <li>Scene-specific presets for common photography scenarios</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="mt-10 py-6 border-t border-gray-200">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p class="mb-2">Context-Aware Auto Exposure System for Scene-Specific Optimization in Imaging Devices</p>
+            <p>M.Tech. Project | Department of Computer Science and Engineering | GITAM (Deemed to be University)</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const cameraFeed = document.getElementById('cameraFeed');
+        const capturedImage = document.getElementById('capturedImage');
+        const placeholderImage = document.getElementById('placeholderImage');
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const cameraSelect = document.getElementById('cameraSelect');
+        
+        // Sliders & values
+        const drThreshold = document.getElementById('drThreshold');
+        const contrastThreshold = document.getElementById('contrastThreshold');
+        const lowPercentile = document.getElementById('lowPercentile');
+        const highPercentile = document.getElementById('highPercentile');
+        const hdrSensitivity = document.getElementById('hdrSensitivity');
+        
+        const drThresholdValue = document.getElementById('drThresholdValue');
+        const contrastThresholdValue = document.getElementById('contrastThresholdValue');
+        const lowPercentileValue = document.getElementById('lowPercentileValue');
+        const highPercentileValue = document.getElementById('highPercentileValue');
+        const hdrSensitivityValue = document.getElementById('hdrSensitivityValue');
+        
+        // Results elements
+        const resultsSection = document.getElementById('resultsSection');
+        const classificationResult = document.getElementById('classificationResult');
+        const classificationValue = document.getElementById('classificationValue');
+        const dynamicRangeValue = document.getElementById('dynamicRangeValue');
+        const contrastValue = document.getElementById('contrastValue');
+        const highContrastValue = document.getElementById('highContrastValue');
+        const exposuresValue = document.getElementById('exposuresValue');
+        const exposureBrackets = document.getElementById('exposureBrackets');
+        const exposurePills = document.getElementById('exposurePills');
+        
+        // Visualization elements
+        const histogram = document.getElementById('histogram');
+        const analysisImage = document.getElementById('analysisImage');
+        const contrastImage = document.getElementById('contrastImage');
+        const heatmapCanvas = document.getElementById('heatmapCanvas');
+        const contrastCanvas = document.getElementById('contrastCanvas');
+        
+        // Global variables
+        let stream = null;
+        let imageData = null;
+        let originalImage = null;
+        
+        // Setup event listeners for sliders
+        drThreshold.addEventListener('input', updateSliderValue);
+        contrastThreshold.addEventListener('input', updateSliderValue);
+        lowPercentile.addEventListener('input', updateSliderValue);
+        highPercentile.addEventListener('input', updateSliderValue);
+        hdrSensitivity.addEventListener('input', updateSensitivityValue);
+        
+        function updateSliderValue(e) {
+            const id = e.target.id;
+            const value = e.target.value;
+            
+            // Update display value
+            document.getElementById(`${id}Value`).textContent = value;
+            
+            // Reanalyze if we have image data
+            if (imageData) analyzeImage();
+        }
+        
+        function updateSensitivityValue(e) {
+            const value = parseInt(e.target.value);
+            let label = 'Normal';
+            
+            switch(value) {
+                case 1:
+                    label = 'Very Conservative';
+                    break;
+                case 2:
+                    label = 'Conservative';
+                    break;
+                case 3:
+                    label = 'Normal';
+                    break;
+                case 4:
+                    label = 'Aggressive';
+                    break;
+                case 5:
+                    label = 'Very Aggressive';
+                    break;
+            }
+            
+            hdrSensitivityValue.textContent = label;
+            
+            if (imageData) analyzeImage();
+        }
+        
+        // Camera functions
+        startCameraBtn.addEventListener('click', startCamera);
+        captureBtn.addEventListener('click', captureImage);
+        stopCameraBtn.addEventListener('click', stopCamera);
+        
+        async function startCamera() {
+            try {
+                const facingMode = cameraSelect.value;
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode }
+                });
+                
+                cameraFeed.srcObject = stream;
+                cameraFeed.style.display = 'block';
+                capturedImage.style.display = 'none';
+                placeholderImage.style.display = 'none';
+                
+                startCameraBtn.disabled = true;
+                captureBtn.disabled = false;
+                stopCameraBtn.disabled = false;
+                analyzeBtn.disabled = true;
+            } catch (err) {
+                console.error('Error accessing camera:', err);
+                alert('Error accessing camera: ' + err.message);
+            }
+        }
+        
+        function captureImage() {
+            // Create a canvas to capture the video frame
+            const canvas = document.createElement('canvas');
+            canvas.width = cameraFeed.videoWidth;
+            canvas.height = cameraFeed.videoHeight;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(cameraFeed, 0, 0);
+            
+            // Display the captured image
+            capturedImage.src = canvas.toDataURL('image/jpeg');
+            capturedImage.style.display = 'block';
+            cameraFeed.style.display = 'none';
+            
+            // Save the image data for analysis
+            imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            originalImage = new Image();
+            originalImage.src = capturedImage.src;
+            
+            // Set analysis images
+            analysisImage.src = capturedImage.src;
+            contrastImage.src = capturedImage.src;
+            
+            // Enable the analyze button
+            analyzeBtn.disabled = false;
+        }
+        
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            cameraFeed.srcObject = null;
+            cameraFeed.style.display = 'none';
+            
+            if (capturedImage.src) {
+                capturedImage.style.display = 'block';
+            } else {
+                placeholderImage.style.display = 'block';
+            }
+            
+            startCameraBtn.disabled = false;
+            captureBtn.disabled = true;
+            stopCameraBtn.disabled = true;
+        }
+        
+        // File upload handling
+        fileInput.addEventListener('change', handleFileUpload);
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Clear camera if active
+                    if (stream) {
+                        stream.getTracks().forEach(track => track.stop());
+                        stream = null;
+                        cameraFeed.srcObject = null;
+                        cameraFeed.style.display = 'none';
+                        
+                        startCameraBtn.disabled = false;
+                        captureBtn.disabled = true;
+                        stopCameraBtn.disabled = true;
+                    }
+                    
+                    // Display the uploaded image
+                    capturedImage.src = e.target.result;
+                    capturedImage.style.display = 'block';
+                    placeholderImage.style.display = 'none';
+                    
+                    // Create canvas to get image data
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Save the image data for analysis
+                    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    originalImage = img;
+                    
+                    // Set analysis images
+                    analysisImage.src = capturedImage.src;
+                    contrastImage.src = capturedImage.src;
+                    
+                    // Enable analyze button
+                    analyzeBtn.disabled = false;
+                    
+                    // Auto-analyze
+                    analyzeImage();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Drag and drop handling
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropZone.classList.add('active');
+        }
+        
+        function unhighlight() {
+            dropZone.classList.remove('active');
+        }
+        
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                fileInput.files = files;
+                handleFileUpload({ target: { files: files } });
+            }
+        }
+        
+        // Image analysis
+        analyzeBtn.addEventListener('click', analyzeImage);
+        
+        function analyzeImage() {
+            if (!imageData) {
+                alert('No image data available for analysis');
+                return;
+            }
+            
+            // Get current threshold values
+            const currentDRThreshold = parseFloat(drThreshold.value);
+            const currentContrastThreshold = parseFloat(contrastThreshold.value);
+            const currentLowPercentile = parseInt(lowPercentile.value);
+            const currentHighPercentile = parseInt(highPercentile.value);
+            const sensitivityLevel = parseInt(hdrSensitivity.value);
+            
+            // Apply sensitivity adjustments
+            const adjustedDRThreshold = currentDRThreshold * (1 + (3 - sensitivityLevel) * 0.1);
+            const adjustedContrastThreshold = currentContrastThreshold * (1 + (3 - sensitivityLevel) * 0.1);
+            
+            // Convert to grayscale for analysis
+            const data = imageData.data;
+            const width = imageData.width;
+            const height = imageData.height;
+            const grayscale = new Uint8ClampedArray(width * height);
+            
+            for (let i = 0; i < data.length; i += 4) {
+                // Use luminance formula: 0.299*R + 0.587*G + 0.114*B
+                grayscale[i/4] = Math.round(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
+            }
+            
+            // Calculate dynamic range with enhanced sensitivity
+            const dynamicRange = calculateDynamicRange(grayscale, currentLowPercentile, currentHighPercentile);
+            
+            // Calculate local contrast
+            const localContrast = calculateLocalContrast(grayscale, width, height);
+            
+            // Additional statistics for improved detection
+            const stdDev = calculateStandardDeviation(grayscale);
+            const { contrastRegions, highContrastPercentage } = identifyHighContrastRegions(grayscale, width, height);
+            
+            // Calculate luminance histogram for secondary analysis
+            const histogramData = calculateHistogram(grayscale);
+            const { histogramSpread, histogramGaps } = analyzeHistogram(histogramData);
+            
+            // Enhanced HDR detection with multiple factors, adjusted by sensitivity
+            const sensitivityFactor = (sensitivityLevel - 3) * 0.25; // -0.5 to +0.5
+            
+            const isHDR = (
+                // Primary criteria: dynamic range and contrast
+                (dynamicRange > adjustedDRThreshold && localContrast > adjustedContrastThreshold) ||
+                // Secondary criteria: extreme dynamic range even with lower contrast
+                (dynamicRange > adjustedDRThreshold * 1.5) ||
+                // Tertiary criteria: good dynamic range with high contrast regions
+                (dynamicRange > adjustedDRThreshold * (0.8 - sensitivityFactor) && 
+                 highContrastPercentage > (15 - sensitivityLevel * 2)) ||
+                // Quaternary criteria: medium dynamic range with significant histogram gaps
+                (dynamicRange > adjustedDRThreshold * (0.7 - sensitivityFactor) && 
+                 histogramGaps > 2 && histogramSpread > (0.7 - sensitivityFactor))
+            );
+            
+            // Calculate suggested exposures
+            let suggestedExposures = 1;
+            if (isHDR) {
+                if (dynamicRange > 10) {
+                    suggestedExposures = 7;
+                } else if (dynamicRange > 7) {
+                    suggestedExposures = 5;
+                } else {
+                    suggestedExposures = 3;
+                }
+            }
+            
+            // Update UI with results
+            resultsSection.classList.add('fade-in');
+            resultsSection.style.opacity = 1;
+            
+            classificationResult.textContent = isHDR ? 
+                'This scene contains high dynamic range and would benefit from HDR processing.' :
+                'This scene has standard dynamic range and can be captured with a single exposure.';
+                
+            classificationValue.textContent = isHDR ? 'HDR Scene' : 'Standard Scene';
+            classificationValue.className = isHDR ? 'text-3xl font-bold mb-2 hdr-label' : 'text-3xl font-bold mb-2 non-hdr-label';
+            
+            dynamicRangeValue.textContent = dynamicRange.toFixed(2) + ' stops';
+            contrastValue.textContent = localContrast.toFixed(2);
+            highContrastValue.textContent = highContrastPercentage.toFixed(1) + '%';
+            exposuresValue.textContent = suggestedExposures;
+            
+            // Show exposure brackets
+            if (suggestedExposures > 1) {
+                exposureBrackets.classList.remove('hidden');
+                generateExposurePills(suggestedExposures);
+            } else {
+                exposureBrackets.classList.add('hidden');
+            }
+            
+            // Draw visualizations
+            drawHistogramWithExtendedInfo(histogramData, currentLowPercentile, currentHighPercentile);
+            
+            // Create dynamic range heatmap
+            createDynamicRangeHeatmap(grayscale, width, height);
+            
+            // Create contrast heatmap
+            createContrastHeatmap(grayscale, width, height);
+        }
+        
+        function generateExposurePills(exposureCount) {
+            exposurePills.innerHTML = '';
+            
+            let exposureValues = [];
+            if (exposureCount === 3) {
+                exposureValues = [-2, 0, 2];
+            } else if (exposureCount === 5) {
+                exposureValues = [-4, -2, 0, 2, 4];
+            } else if (exposureCount === 7) {
+                exposureValues = [-6, -4, -2, 0, 2, 4, 6];
+            } else if (exposureCount === 9) {
+                exposureValues = [-8, -6, -4, -2, 0, 2, 4, 6, 8];
+            }
+            
+            exposureValues.forEach(ev => {
+                const pill = document.createElement('span');
+                pill.className = 'exposure-pill';
+                
+                if (ev < 0) {
+                    pill.classList.add('bg-blue-100', 'text-blue-800');
+                } else if (ev > 0) {
+                    pill.classList.add('bg-yellow-100', 'text-yellow-800');
+                } else {
+                    pill.classList.add('bg-green-100', 'text-green-800');
+                }
+                
+                pill.textContent = ev > 0 ? `+${ev} EV` : `${ev} EV`;
+                exposurePills.appendChild(pill);
+            });
+        }
+        
+        function calculateStandardDeviation(grayscaleData) {
+            const mean = grayscaleData.reduce((sum, val) => sum + val, 0) / grayscaleData.length;
+            
+            let sumSquaredDiff = 0;
+            for (let i = 0; i < grayscaleData.length; i++) {
+                const diff = grayscaleData[i] - mean;
+                sumSquaredDiff += diff * diff;
+            }
+            
+            return Math.sqrt(sumSquaredDiff / grayscaleData.length);
+        }
+        
+        function identifyHighContrastRegions(grayscaleData, width, height, threshold = 35) {
+            const blockSize = 16; // Size of local regions to analyze
+            const contrastRegions = new Uint8ClampedArray(width * height);
+            
+            let highContrastBlocks = 0;
+            const totalBlocks = Math.floor((width - blockSize) / blockSize) * Math.floor((height - blockSize) / blockSize);
+            
+            // Analyze contrast in small regions
+            for (let by = 0; by < height - blockSize; by += blockSize) {
+                for (let bx = 0; bx < width - blockSize; bx += blockSize) {
+                    let minVal = 255;
+                    let maxVal = 0;
+                    
+                    // Find min and max in this block
+                    for (let y = 0; y < blockSize; y++) {
+                        for (let x = 0; x < blockSize; x++) {
+                            const val = grayscaleData[(by + y) * width + (bx + x)];
+                            minVal = Math.min(minVal, val);
+                            maxVal = Math.max(maxVal, val);
+                        }
+                    }
+                    
+                    const blockContrast = maxVal - minVal;
+                    
+                    // Mark as high contrast region
+                    if (blockContrast > threshold) {
+                        highContrastBlocks++;
+                        
+                        // Fill the region in our contrast map
+                        for (let y = 0; y < blockSize; y++) {
+                            for (let x = 0; x < blockSize; x++) {
+                                contrastRegions[(by + y) * width + (bx + x)] = 255;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            const highContrastPercentage = (highContrastBlocks / Math.max(1, totalBlocks)) * 100;
+            
+            return { contrastRegions, highContrastPercentage };
+        }
+        
+        function calculateHistogram(grayscaleData) {
+            const histogramBins = new Array(256).fill(0);
+            
+            for (let i = 0; i < grayscaleData.length; i++) {
+                histogramBins[grayscaleData[i]]++;
+            }
+            
+            return histogramBins;
+        }
+        
+        function analyzeHistogram(histogram) {
+            // Normalize histogram
+            const totalPixels = histogram.reduce((sum, count) => sum + count, 0);
+            const normalizedHist = histogram.map(count => count / totalPixels);
+            
+            // Find populated regions of histogram
+            const significantThreshold = 0.0005; // 0.05% of total pixels
+            let populatedBins = 0;
+            let gaps = 0;
+            let inGap = false;
+            
+            for (let i = 0; i < normalizedHist.length; i++) {
+                if (normalizedHist[i] > significantThreshold) {
+                    populatedBins++;
+                    if (inGap) {
+                        inGap = false;
+                    }
+                } else {
+                    if (!inGap && i > 0 && normalizedHist[i-1] > significantThreshold) {
+                        inGap = true;
+                        gaps++;
+                    }
+                }
+            }
+            
+            // Calculate spread as portion of range that has data
+            const histogramSpread = populatedBins / 256;
+            
+            return { histogramSpread, histogramGaps: gaps };
+        }
+        
+        function calculateDynamicRange(grayscaleData, percentileLow = 5, percentileHigh = 95) {
+            // Create a copy for sorting without modifying original
+            const dataArray = Array.from(grayscaleData);
+            dataArray.sort((a, b) => a - b);
+            
+            // Calculate indices for percentiles
+            const lowIndex = Math.floor(dataArray.length * (percentileLow / 100));
+            const highIndex = Math.floor(dataArray.length * (percentileHigh / 100));
+            
+            // Get percentile values
+            const lDark = dataArray[lowIndex];
+            const lBright = dataArray[highIndex];
+            
+            // Small epsilon to prevent division by zero
+            const epsilon = 1e-6;
+            
+            // Calculate dynamic range in stops (log2)
+            return Math.log2((lBright + epsilon) / (lDark + epsilon));
+        }
+        
+        function calculateLocalContrast(grayscaleData, width, height) {
+            // Create arrays for gradient calculations
+            const gradX = new Array(grayscaleData.length).fill(0);
+            const gradY = new Array(grayscaleData.length).fill(0);
+            
+            // Apply Sobel operator for gradients (skipping borders)
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const idx = y * width + x;
+                    
+                    // Apply Sobel kernel for X direction
+                    gradX[idx] = (
+                        -1 * grayscaleData[(y-1) * width + (x-1)] +
+                         0 * grayscaleData[(y-1) * width + x] +
+                         1 * grayscaleData[(y-1) * width + (x+1)] +
+                        -2 * grayscaleData[y * width + (x-1)] +
+                         0 * grayscaleData[y * width + x] +
+                         2 * grayscaleData[y * width + (x+1)] +
+                        -1 * grayscaleData[(y+1) * width + (x-1)] +
+                         0 * grayscaleData[(y+1) * width + x] +
+                         1 * grayscaleData[(y+1) * width + (x+1)]
+                    );
+                    
+                    // Apply Sobel kernel for Y direction
+                    gradY[idx] = (
+                        -1 * grayscaleData[(y-1) * width + (x-1)] +
+                        -2 * grayscaleData[(y-1) * width + x] +
+                        -1 * grayscaleData[(y-1) * width + (x+1)] +
+                         0 * grayscaleData[y * width + (x-1)] +
+                         0 * grayscaleData[y * width + x] +
+                         0 * grayscaleData[y * width + (x+1)] +
+                         1 * grayscaleData[(y+1) * width + (x-1)] +
+                         2 * grayscaleData[(y+1) * width + x] +
+                         1 * grayscaleData[(y+1) * width + (x+1)]
+                    );
+                }
+            }
+            
+            // Calculate gradient magnitude and sum
+            let totalMagnitude = 0;
+            let count = 0;
+            
+            for (let i = width + 1; i < grayscaleData.length - width - 1; i++) {
+                if (i % width !== 0 && i % width !== width - 1) {
+                    const magnitude = Math.sqrt(gradX[i] * gradX[i] + gradY[i] * gradY[i]);
+                    totalMagnitude += magnitude;
+                    count++;
+                }
+            }
+            
+            // Mean gradient magnitude
+            return count > 0 ? totalMagnitude / count : 0;
+        }
+        
+        function drawHistogramWithExtendedInfo(histogramData, lowPercentile, highPercentile) {
+            const ctx = histogram.getContext('2d');
+            const width = histogram.width;
+            const height = histogram.height;
+            
+            // Clear previous histogram
+            ctx.clearRect(0, 0, width, height);
+            
+            // Find maximum bin count for scaling
+            const maxCount = Math.max(...histogramData);
+            
+            // Draw background
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw grid lines
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            
+            // Vertical grid lines (every 64 levels)
+            for (let i = 0; i <= 256; i += 64) {
+                const x = (i / 256) * width;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            }
+            
+            // Horizontal grid lines (25%, 50%, 75%)
+            for (let i = 1; i <= 3; i++) {
+                const y = height * (i / 4);
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+            
+            // Draw histogram with gradient fill
+            const gradient = ctx.createLinearGradient(0, 0, width, 0);
+            gradient.addColorStop(0, '#1e40af');    // Dark for shadows
+            gradient.addColorStop(0.25, '#3b82f6');  // Blues for darker tones
+            gradient.addColorStop(0.5, '#22c55e');   // Green for mid-tones
+            gradient.addColorStop(0.75, '#eab308');  // Yellow for brighter tones
+            gradient.addColorStop(1, '#ef4444');     // Red for highlights
+            
+            ctx.fillStyle = gradient;
+            
+            // Draw each histogram bar
+            const barWidth = width / 256;
+            for (let i = 0; i < 256; i++) {
+                const x = (i / 256) * width;
+                const barHeight = (histogramData[i] / maxCount) * height;
+                ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+            }
+            
+            // Calculate percentile values for markers
+            const totalPixels = histogramData.reduce((sum, count) => sum + count, 0);
+            
+            // Find low and high percentile positions
+            let lowPixelCount = 0;
+            let lowPercentileIndex = 0;
+            while (lowPixelCount < (totalPixels * lowPercentile / 100) && lowPercentileIndex < 255) {
+                lowPixelCount += histogramData[lowPercentileIndex++];
+            }
+            
+            let highPixelCount = 0;
+            let highPercentileIndex = 255;
+            while (highPixelCount < (totalPixels * (100 - highPercentile) / 100) && highPercentileIndex > 0) {
+                highPixelCount += histogramData[highPercentileIndex--];
+            }
+            
+            // Draw percentile markers
+            const lowX = (lowPercentileIndex / 256) * width;
+            const highX = (highPercentileIndex / 256) * width;
+            
+            // Low percentile line
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(lowX, 0);
+            ctx.lineTo(lowX, height);
+            ctx.stroke();
+            
+            // Draw label
+            ctx.fillStyle = '#ef4444';
+            ctx.font = '10px sans-serif';
+            ctx.fillText(`${lowPercentile}%`, lowX + 3, 12);
+            
+            // High percentile line
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(highX, 0);
+            ctx.lineTo(highX, height);
+            ctx.stroke();
+            
+            // Draw label
+            ctx.fillStyle = '#22c55e';
+            ctx.font = '10px sans-serif';
+            ctx.fillText(`${highPercentile}%`, highX - 20, 12);
+            
+            // Draw dynamic range text at bottom
+            ctx.fillStyle = '#475569';
+            ctx.font = '10px sans-serif';
+            
+            const dynamicRange = Math.log2((highPercentileIndex + 1e-6) / (lowPercentileIndex + 1e-6)).toFixed(2);
+            ctx.fillText(`Dynamic Range: ${dynamicRange} stops`, 10, height - 5);
+        }
+        
+        function createDynamicRangeHeatmap(grayscaleData, width, height) {
+            // Make sure the heatmap canvas matches the image size
+            heatmapCanvas.width = width;
+            heatmapCanvas.height = height;
+            
+            const ctx = heatmapCanvas.getContext('2d');
+            ctx.clearRect(0, 0, width, height);
+            
+            // Create an ImageData for the heatmap
+            const heatmapData = ctx.createImageData(width, height);
+            const data = heatmapData.data;
+            
+            // Calculate brightness distribution
+            const shadowThreshold = 64;    // Below this is considered shadow
+            const highlightThreshold = 192; // Above this is considered highlight
+            
+            for (let i = 0; i < grayscaleData.length; i++) {
+                const value = grayscaleData[i];
+                const idx = i * 4;
+                
+                if (value < shadowThreshold) {
+                    // Shadows (blue)
+                    const intensity = 1 - (value / shadowThreshold);
+                    data[idx] = 0;  // R
+                    data[idx+1] = 0;  // G
+                    data[idx+2] = Math.round(200 * intensity) + 55;  // B
+                    data[idx+3] = Math.round(200 * intensity);  // Alpha
+                } else if (value > highlightThreshold) {
+                    // Highlights (red)
+                    const intensity = (value - highlightThreshold) / (255 - highlightThreshold);
+                    data[idx] = Math.round(200 * intensity) + 55;  // R
+                    data[idx+1] = 0;  // G
+                    data[idx+2] = 0;  // B
+                    data[idx+3] = Math.round(200 * intensity);  // Alpha
+                } else {
+                    // Mid-tones (green)
+                    const intensity = 1 - Math.abs((value - 128) / 64);
+                    data[idx] = 0;  // R
+                    data[idx+1] = Math.round(150 * intensity) + 55;  // G
+                    data[idx+2] = 0;  // B
+                    data[idx+3] = Math.round(150 * intensity);  // Alpha
+                }
+            }
+            
+            ctx.putImageData(heatmapData, 0, 0);
+        }
+        
+        function createContrastHeatmap(grayscaleData, width, height) {
+            // Make sure the contrast canvas matches the image size
+            contrastCanvas.width = width;
+            contrastCanvas.height = height;
+            
+            const ctx = contrastCanvas.getContext('2d');
+            ctx.clearRect(0, 0, width, height);
+            
+            // Create an ImageData for the heatmap
+            const contrastData = ctx.createImageData(width, height);
+            const data = contrastData.data;
+            
+            // Calculate local contrast at each pixel
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const idx = (y * width + x);
+                    const dataIdx = idx * 4;
+                    
+                    // Apply simple gradient magnitude calculation
+                    const gx = (
+                        grayscaleData[(y-1) * width + (x+1)] - 
+                        grayscaleData[(y-1) * width + (x-1)] +
+                        2 * grayscaleData[y * width + (x+1)] - 
+                        2 * grayscaleData[y * width + (x-1)] +
+                        grayscaleData[(y+1) * width + (x+1)] - 
+                        grayscaleData[(y+1) * width + (x-1)]
+                    ) / 8;
+                    
+                    const gy = (
+                        grayscaleData[(y+1) * width + (x-1)] - 
+                        grayscaleData[(y-1) * width + (x-1)] +
+                        2 * grayscaleData[(y+1) * width + x] - 
+                        2 * grayscaleData[(y-1) * width + x] +
+                        grayscaleData[(y+1) * width + (x+1)] - 
+                        grayscaleData[(y-1) * width + (x+1)]
+                    ) / 8;
+                    
+                    const gradientMagnitude = Math.sqrt(gx*gx + gy*gy);
+                    
+                    // Apply contrast coloring
+                    if (gradientMagnitude < 10) {
+                        // Low contrast (blue)
+                        data[dataIdx] = 120;  // R
+                        data[dataIdx+1] = 120; // G
+                        data[dataIdx+2] = 255; // B
+                        data[dataIdx+3] = Math.min(255, gradientMagnitude * 10); // Alpha
+                    } else if (gradientMagnitude < 25) {
+                        // Medium contrast (yellow)
+                        data[dataIdx] = 255;  // R
+                        data[dataIdx+1] = 220; // G
+                        data[dataIdx+2] = 0;   // B
+                        data[dataIdx+3] = Math.min(255, gradientMagnitude * 8); // Alpha
+                    } else {
+                        // High contrast (red)
+                        data[dataIdx] = 255;  // R
+                        data[dataIdx+1] = 0;   // G
+                        data[dataIdx+2] = 0;   // B
+                        data[dataIdx+3] = Math.min(255, gradientMagnitude * 6); // Alpha
+                    }
+                }
+            }
+            
+            ctx.putImageData(contrastData, 0, 0);
+        }
+    </script>
+</body>
+</html>
